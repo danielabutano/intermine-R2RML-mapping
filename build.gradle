@@ -1,0 +1,27 @@
+apply plugin: "java"
+apply plugin: "application"
+apply plugin: "idea"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+}
+
+mainClassName = "org.intermine.r2rmlmapping.R2RMLMapping"
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    
+}
+
+
