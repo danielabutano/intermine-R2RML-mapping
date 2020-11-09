@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDF;
 
 public class R2RMLMapping {
@@ -62,15 +63,29 @@ public class R2RMLMapping {
 
 	private static void mapBasicFields(ClassDescriptor cd, org.apache.jena.rdf.model.Model model)
 	{
-		System.err.println("TABLE: " + DatabaseUtil.getTableName(cd));
+		final String tableName = DatabaseUtil.getTableName(cd);
+		System.err.println("TABLE: " + tableName);
 		final Resource basicTableMapping = model.createResource();
 		model.add(basicTableMapping, RDF.type, R2RML.TriplesMap );
 		final Resource logicalTable = model.createResource();
 		model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
-		model.add(logicalTable, R2RML.tableName, DatabaseUtil.getTableName(cd));
+		model.add(logicalTable, R2RML.tableName, tableName);
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors()) {
 		    String columnName = DatabaseUtil.getColumnName(fd);
+		    
 		    if (fd instanceof AttributeDescriptor) {
+		    	AttributeDescriptor ad = (AttributeDescriptor) fd;
+		    	if ("id".equals(columnName))
+		    	{
+		    		Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
+		    		Resource subjectMap= model.createResource();
+		    		model.add(basicTableMapping, R2RML.subjectMap, subjectMap);
+		    		
+		    		model.add(subjectMap, R2RML.template, "http://intermine.org/"+tableName+"/{"+columnName+"}");
+		    
+		    		model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
+				    
+		    	}
 		        System.err.println(columnName +
 		                (columnName.equalsIgnoreCase("id") ? ": PRIMARY KEY" : ": column")
 		                        + " with type " + ((AttributeDescriptor) fd).getType());

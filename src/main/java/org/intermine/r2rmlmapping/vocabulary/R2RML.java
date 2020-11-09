@@ -10,4 +10,7 @@ public class R2RML
 	public static final Resource TriplesMap = ResourceFactory.createProperty(uri, "TriplesMap");
 	public static final Property logicalTable = ResourceFactory.createProperty(uri, "logicalTable");
 	public static final Property tableName = ResourceFactory.createProperty(uri, "tableName");
+	public static final Property subjectMap = ResourceFactory.createProperty(uri, "subjectMap");
+	public static final Property template = ResourceFactory.createProperty(uri,"template");
+	public static final Property classProperty = ResourceFactory.createProperty(uri,"class");
 }
