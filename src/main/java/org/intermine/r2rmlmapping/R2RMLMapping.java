@@ -1,11 +1,14 @@
 package org.intermine.r2rmlmapping;
 
 import org.intermine.metadata.*;
+import org.intermine.r2rmlmapping.vocabulary.R2RML;
 import org.intermine.sql.DatabaseUtil;
 
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDF;
 
 public class R2RMLMapping {
     /** The version number of the database format */
@@ -33,6 +36,7 @@ public class R2RMLMapping {
                 mapJoinToOtherTable(indirections, cd, table, jenaModel);
             }
         }
+        jenaModel.write(System.out, "turtle");
     }
 
 	private static void mapJoinToOtherTable(Set<CollectionDescriptor> indirections, ClassDescriptor cd, String table, org.apache.jena.rdf.model.Model jenaModel)
@@ -56,10 +60,12 @@ public class R2RMLMapping {
 		}
 	}
 
-	private static void mapBasicFields(ClassDescriptor cd, org.apache.jena.rdf.model.Model jenaModel)
+	private static void mapBasicFields(ClassDescriptor cd, org.apache.jena.rdf.model.Model model)
 	{
 		System.err.println("TABLE: " + DatabaseUtil.getTableName(cd));
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors()) {
+			final Resource basicTableMapping = model.createResource();
+			model.add(model.add(basicTableMapping, RDF.type, R2RML.TriplesMap ));
 		    String columnName = DatabaseUtil.getColumnName(fd);
 		    if (fd instanceof AttributeDescriptor) {
 		        System.err.println(columnName +
