@@ -301,7 +301,7 @@
 	<attribute name="name" type="java.lang.String" term="http://semanticscience.org/resource/SIO_000183"/>
 	<collection name="publications" referenced-type="Publication" reverse-reference="authors"/>
 </class>
-<class name="Protein" extends="BioEntity" is-interface="true" term="http://semanticscience.org/resource/SIO_010043">
+<class name="Protein" extends="BioEntity" is-interface="true" term="http://purl.uniprot.org/core/Protein">
 	<attribute name="md5checksum" type="java.lang.String" term="http://edamontology.org/data_2190"/>
 	<attribute name="primaryAccession" type="java.lang.String" term="http://edamontology.org/data_2907"/>
 	<attribute name="molecularWeight" type="java.lang.Double" term="http://purl.bioontology.org/ontology/MESH/D008970"/>
