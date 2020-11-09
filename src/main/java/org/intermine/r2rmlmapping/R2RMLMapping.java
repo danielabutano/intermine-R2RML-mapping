@@ -18,11 +18,13 @@ public class R2RMLMapping {
 
         for (ClassDescriptor cd :classDescriptors) {
             String table = cd.getSimpleName();
-            if (table.equalsIgnoreCase("Gene") ||
-                    table.equalsIgnoreCase("Chromosome") ||
-                    table.equalsIgnoreCase("Organism") ||
-                    table.equalsIgnoreCase("DataSource") ||
-                    table.equalsIgnoreCase("DataSet")) {
+            if (//table.equalsIgnoreCase("Gene") ||
+                    table.equalsIgnoreCase("Protein") ||
+                    table.equalsIgnoreCase("Organism")
+                    //table.equalsIgnoreCase("DataSource") ||
+                    //table.equalsIgnoreCase("DataSet")
+                    //
+                    ) {
 
                 System.out.println("TABLE: " + DatabaseUtil.getTableName(cd));
                 for (FieldDescriptor fd : cd.getAllFieldDescriptors()) {
