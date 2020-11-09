@@ -70,18 +70,20 @@ public class R2RMLMapping {
 		final Resource logicalTable = model.createResource();
 		model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
 		model.add(logicalTable, R2RML.tableName, tableName);
+
+		URIHelper uriHelper = new URIHelper();
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors()) {
 		    String columnName = DatabaseUtil.getColumnName(fd);
 		    
 		    if (fd instanceof AttributeDescriptor) {
 		    	AttributeDescriptor ad = (AttributeDescriptor) fd;
-		    	if ("id".equals(columnName))
+		    	if (uriHelper.isURIIdentifier(tableName, columnName))
 		    	{
 		    		Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
 		    		Resource subjectMap= model.createResource();
 		    		model.add(basicTableMapping, R2RML.subjectMap, subjectMap);
-		    		
-		    		model.add(subjectMap, R2RML.template, "http://intermine.org/"+tableName+"/{"+columnName+"}");
+
+					model.add(subjectMap, R2RML.template, uriHelper.createURI(tableName));
 		    
 		    		model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
 				    
