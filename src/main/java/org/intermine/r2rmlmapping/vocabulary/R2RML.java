@@ -23,4 +23,12 @@ public class R2RML
 	public static final Property datatype = ResourceFactory.createProperty(uri, "datatype");
 	public static final Property column = ResourceFactory.createProperty(uri, "column");
 	public static final Property predicate = ResourceFactory.createProperty(uri, "predicate");
+	public static final Property parentTriplesMap = ResourceFactory.createProperty(uri, "parentTriplesMap");
+	public static final Property joinCondition = ResourceFactory.createProperty(uri, "joinCondition");
+	public static final Property child = ResourceFactory.createProperty(uri, "child");
+	public static final Property parent = ResourceFactory.createProperty(uri, "parent");
+	public static final Property R2RMLView = ResourceFactory.createProperty(uri, "R2RMLView");
+	public static final Property sqlQuery = ResourceFactory.createProperty(uri, "sqlQuery");
+	public static final Property predicateObjectMap = ResourceFactory.createProperty(uri, "predicateObjectMap");
+	public static final RDFNode IRI = ResourceFactory.createProperty(uri, "IRI");
 }
