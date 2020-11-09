@@ -4,7 +4,8 @@ import org.intermine.web.uri.ClassNameURIIdentifierMapper;
 
 public class URIHelper {
     public final static String interMineNS = "http://intermine.org/biotestmine/";
-    public final static String uniProtNS = "http://purl.uniprot.org/core/Protein/";
+    public final static String uniProtNS = "http://purl.uniprot.org/core/";
+    public final static String uniProtKbNS = "http://purl.uniprot.org/uniprot/";
 
     private static final String DEFAULT_IDENTIFIER = "primaryIdentifier";
     private ClassNameURIIdentifierMapper classNameIdentifierMapper = null;
@@ -28,7 +29,7 @@ public class URIHelper {
     public String createURI(String type) {
         String identifier = getIdentifier(type);
         if (("Protein").equalsIgnoreCase(type)) {
-            return uniProtNS + "{" + identifier +"}";
+            return uniProtKbNS + "{" + identifier +"}";
         } else {
             return interMineNS + type + "/{" + identifier +"}";
         }
