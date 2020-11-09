@@ -63,9 +63,12 @@ public class R2RMLMapping {
 	private static void mapBasicFields(ClassDescriptor cd, org.apache.jena.rdf.model.Model model)
 	{
 		System.err.println("TABLE: " + DatabaseUtil.getTableName(cd));
+		final Resource basicTableMapping = model.createResource();
+		model.add(basicTableMapping, RDF.type, R2RML.TriplesMap );
+		final Resource logicalTable = model.createResource();
+		model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
+		model.add(logicalTable, R2RML.tableName, DatabaseUtil.getTableName(cd));
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors()) {
-			final Resource basicTableMapping = model.createResource();
-			model.add(model.add(basicTableMapping, RDF.type, R2RML.TriplesMap ));
 		    String columnName = DatabaseUtil.getColumnName(fd);
 		    if (fd instanceof AttributeDescriptor) {
 		        System.err.println(columnName +
