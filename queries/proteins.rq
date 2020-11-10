@@ -1,0 +1,2 @@
+PREFIX up:<http://purl.uniprot.org/core/>
+SELECT ?p WHERE {?p a up:Protein}
