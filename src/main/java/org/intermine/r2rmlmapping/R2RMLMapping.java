@@ -1,5 +1,8 @@
 package org.intermine.r2rmlmapping;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +36,7 @@ public class R2RMLMapping
 		final org.apache.jena.rdf.model.Model jenaModel = ModelFactory.createDefaultModel();
 		setKnownPrefixes(jenaModel);
 		URIHelper uriHelper = new URIHelper();
+
 		for (ClassDescriptor cd : classDescriptors)
 		{
 			String table = cd.getSimpleName();
@@ -51,7 +55,13 @@ public class R2RMLMapping
 				mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
 			}
 		}
-		jenaModel.write(System.out, "turtle");
+		try {
+			PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"));
+			jenaModel.write(out, "turtle");
+			jenaModel.write(System.out, "turtle");
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	private static void setKnownPrefixes(final org.apache.jena.rdf.model.Model jenaModel)

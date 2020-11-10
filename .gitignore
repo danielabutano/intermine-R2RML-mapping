@@ -5,6 +5,7 @@ out/
 .gradle/
 *.log
 *.log.*
+*.ttl
 
 *.class
 productionLog
