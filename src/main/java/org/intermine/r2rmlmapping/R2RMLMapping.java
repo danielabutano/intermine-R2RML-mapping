@@ -31,9 +31,7 @@ public class R2RMLMapping
 		Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
 		Set<CollectionDescriptor> indirections = new HashSet<CollectionDescriptor>();
 		final org.apache.jena.rdf.model.Model jenaModel = ModelFactory.createDefaultModel();
-		jenaModel.setNsPrefix("rr", R2RML.uri);
-		jenaModel.setNsPrefix("rdfs", RDFS.uri);
-		jenaModel.setNsPrefix("up", URIHelper.uniProtNS);
+		setKnownPrefixes(jenaModel);
 		for (ClassDescriptor cd : classDescriptors)
 		{
 			String table = cd.getSimpleName();
@@ -53,6 +51,13 @@ public class R2RMLMapping
 			}
 		}
 		jenaModel.write(System.out, "turtle");
+	}
+
+	private static void setKnownPrefixes(final org.apache.jena.rdf.model.Model jenaModel)
+	{
+		jenaModel.setNsPrefix("rr", R2RML.uri);
+		jenaModel.setNsPrefix("rdfs", RDFS.uri);
+		jenaModel.setNsPrefix("up", URIHelper.uniProtNS);
 	}
 
 	private static void mapJoinToOtherTable(Set<CollectionDescriptor> indirections, ClassDescriptor cd, String table,
@@ -168,20 +173,39 @@ public class R2RMLMapping
 		return null;
 	}
 
+	/***
+	 * Here we map two tables to each other.
+	 * Normally one would follow https://www.w3.org/TR/r2rml/#example-m2m
+	 * 
+	 * However, that does not apply here as we the intermine primary keys are internal only.
+	 * We need to expose the relation as it is in the outside world.
+	 * 
+	 * This means building a 'view' that links the two tables together via their external known
+	 * URIs. 
+	 * 
+	 * 
+	 * @param model
+	 * @param basicTableMapping
+	 * @param fd
+	 * @param columnName
+	 * @param fromTableName
+	 * @param uriHelper
+	 */
 	private static void mapManyToMany(org.apache.jena.rdf.model.Model model, Resource basicTableMapping,
-	    FieldDescriptor fd, String columnName, String tableName, URIHelper uriHelper)
+	    FieldDescriptor fd, String columnName, String fromTableName, URIHelper uriHelper)
 	{
 		final ClassDescriptor rfc = ((ReferenceDescriptor) fd).getReferencedClassDescriptor();
 
 		Resource table = model.createResource();
-		if (findSubjectMap(fd.getClassDescriptor(), tableName, uriHelper) != null)
+		if (findSubjectMap(fd.getClassDescriptor(), fromTableName, uriHelper) != null)
 		{
-			final String otherTableName = DatabaseUtil.getTableName(rfc);
-			Resource jointTriplesMap = createMappingNameForJoinTable(model, tableName, otherTableName);
-			final AttributeDescriptor parentColumnname = findSubjectMap(rfc, otherTableName, uriHelper);
-			if (parentColumnname != null)
+			final String toTableName = DatabaseUtil.getTableName(rfc);
+			Resource jointTriplesMap = createMappingNameForJoinTable(model, fromTableName, toTableName);
+			final AttributeDescriptor toColumnName = findSubjectMap(rfc, toTableName, uriHelper);
+			if (toColumnName != null)
 			{
-				final AttributeDescriptor childColumnname = generateSubjectMap(fd.getClassDescriptor(), model, tableName,
+				final AttributeDescriptor fromColumnname = generateSubjectMap(fd.getClassDescriptor(), model,
+				    fromTableName,
 				    jointTriplesMap,
 				    uriHelper);
 				Resource objectPredicateMap = model.createResource();
@@ -189,29 +213,45 @@ public class R2RMLMapping
 				model.add(jointTriplesMap, RDF.type, R2RML.TriplesMap);
 				model.add(jointTriplesMap, R2RML.logicalTable, table);
 				model.add(table, RDF.type, R2RML.R2RMLView);
+				// We build a big sql query to join internally via the intermine id's.
+				// But expose the external identifiers only.
+				// We need the "AS" fromColumnname because that column name is used in the 
+				// GenerateSubjectsMap method.
 				model.add(table, R2RML.sqlQuery,
-				    "SELECT " + tableName + "." + childColumnname.getName() + " AS " + childColumnname.getName() + ", "
-				        + otherTableName
-				        + "." + parentColumnname.getName() + "  AS parent FROM "
-				        + tableName + "," + otherTableName
-				        + " WHERE " + tableName + "." + fd.getName() + " = " + otherTableName + ".id");
+				    "SELECT " + fromTableName + "." + fromColumnname.getName() + " AS " + fromColumnname.getName()
+				        + ", "
+				        + toTableName
+				        + "." + toColumnName.getName() + " FROM "
+				        + fromTableName + "," + toTableName
+				        + " WHERE " + fromTableName + "." + fd.getName() + " = " + toTableName + ".id");
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
 				model.add(objectPredicateMap, R2RML.predicate, RDFS.seeAlso);
 				model.add(objectPredicateMap, R2RML.objectMap, objectMap);
 				model.add(objectMap, RDF.type, R2RML.TermMap);
 				model.add(objectMap, RDF.type, R2RML.ObjectMap);
-				model.add(objectMap, R2RML.column, "parent");
+				// We need to disambiguate here as the toColumnName and fromColumnName might be lexically the same.
+				model.add(objectMap, R2RML.column, toTableName + "." + toColumnName.getName());
 				model.add(objectMap, R2RML.termType, R2RML.IRI);
-				model.add(objectMap, R2RML.template, uriHelper.createURI(otherTableName));
+				model.add(objectMap, R2RML.template, uriHelper.createURI(toTableName));
 			}
 			else
 			{
 				System.err
-				    .println("Want to make a join table but don't have iri based key" + tableName + '.' + fd.getName());
+				    .println(
+				        "Want to make a join table but don't have iri based key" + fromTableName + '.' + fd.getName());
 			}
 		}
 	}
 
+	/**
+	 * We generate a simple join condition here as in <a href="https://www.w3.org/TR/r2rml/#example-fk"> the example</a>
+	 * of the R2RML spec
+	 *  
+	 * @param model
+	 * @param basicTableMapping
+	 * @param fd
+	 * @param columnName
+	 */
 	private static void mapOneToMany(org.apache.jena.rdf.model.Model model, final Resource basicTableMapping,
 	    FieldDescriptor fd, String columnName)
 	{
@@ -255,10 +295,11 @@ public class R2RMLMapping
 	{
 		return model.createResource("urn:intermine-table:" + tableName);
 	}
-	
-	private static Resource createMappingNameForJoinTable(org.apache.jena.rdf.model.Model model, final String tableName, final String otherTableName)
+
+	private static Resource createMappingNameForJoinTable(org.apache.jena.rdf.model.Model model, final String tableName,
+	    final String otherTableName)
 	{
-		return model.createResource("urn:intermine-join-tables:" + tableName+'/'+otherTableName);
+		return model.createResource("urn:intermine-join-tables:" + tableName + '/' + otherTableName);
 	}
 
 	/**
