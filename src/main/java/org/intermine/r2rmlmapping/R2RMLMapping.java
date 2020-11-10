@@ -290,15 +290,17 @@ public class R2RMLMapping
 	    final Resource basicTableMapping, String columnName, AttributeDescriptor ad)
 	{
 		System.err.println(tableName + '.' + columnName + " is primitive");
+		Resource predicateObjectMap = model.createResource();
 		Resource objectMap = model.createResource();
-		model.add(basicTableMapping, R2RML.objectMap, objectMap);
+		model.add(basicTableMapping, R2RML.predicateObjectMap, predicateObjectMap);
+		model.add(predicateObjectMap, R2RML.objectMap, objectMap);
 		model.add(objectMap, RDF.type, R2RML.TermMap);
 		model.add(objectMap, RDF.type, R2RML.ObjectMap);
 		model.add(objectMap, R2RML.termType, R2RML.Literal);
 
 		model.add(objectMap, R2RML.datatype, getXsdForFullyQualifiedClassName(ad));
 		model.add(objectMap, R2RML.column, columnName);
-		model.add(objectMap, R2RML.predicate, model.createProperty(ad.getFairTerm()));
+		model.add(predicateObjectMap, R2RML.predicate, model.createProperty(ad.getFairTerm()));
 	}
 
 	private static Resource createMappingNameForTable(org.apache.jena.rdf.model.Model model, final String tableName)
