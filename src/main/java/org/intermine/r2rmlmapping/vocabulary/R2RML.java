@@ -4,6 +4,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.intermine.r2rmlmapping.URIHelper;
 
 
 public class R2RML
@@ -31,4 +32,8 @@ public class R2RML
 	public static final Property sqlQuery = ResourceFactory.createProperty(uri, "sqlQuery");
 	public static final Property predicateObjectMap = ResourceFactory.createProperty(uri, "predicateObjectMap");
 	public static final RDFNode IRI = ResourceFactory.createProperty(uri, "IRI");
+
+	public static final Property createIMProperty(String attribute) {
+		return ResourceFactory.createProperty(URIHelper.interMineNS, "has" + attribute);
+	}
 }

@@ -238,8 +238,7 @@ public class R2RMLMapping
 				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
 				//TODO figure out what predicate to use. Maybe for now just use
-				//http://intermine.org/has{columnName}
-				model.add(objectPredicateMap, R2RML.predicate, RDFS.seeAlso);
+				model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(fromColumnname.getName()));
 				model.add(objectPredicateMap, R2RML.objectMap, objectMap);
 				model.add(objectMap, RDF.type, R2RML.TermMap);
 				model.add(objectMap, RDF.type, R2RML.ObjectMap);
