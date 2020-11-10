@@ -227,6 +227,8 @@ public class R2RMLMapping
 				        + fromTableName + "," + toTableName +"," + joinTableName
 				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
+				//TODO figure out what predicate to use. Maybe for now just use
+				//http://intermine.org/has{columnName}
 				model.add(objectPredicateMap, R2RML.predicate, RDFS.seeAlso);
 				model.add(objectPredicateMap, R2RML.objectMap, objectMap);
 				model.add(objectMap, RDF.type, R2RML.TermMap);
@@ -261,7 +263,9 @@ public class R2RMLMapping
 		model.add(objectMap, R2RML.joinCondition, joinCondition);
 		model.add(joinCondition, R2RML.child, fd.getName() + "id");
 		model.add(joinCondition, R2RML.parent, "id");
-		model.add(objectMap, R2RML.predicate, joinCondition);
+		//TODO figure out what predicate to use. Maybe for now just use
+		//http://intermine.org/has{columnName}
+		model.add(objectMap, R2RML.predicate, RDFS.seeAlso);
 	}
 
 	/**
