@@ -1,0 +1,3 @@
+PREFIX up:<http://purl.uniprot.org/core/>
+
+SELECT ?protein ?organism WHERE {?protein a up:Protein ; rdfs:seeAlso ?organism}

@@ -1,0 +1,5 @@
+PREFIX up:<http://purl.uniprot.org/core/>
+
+SELECT ?protein ?sequence ?type WHERE {?protein a up:Protein ; up:sequence ?sequence .
+  ?sequence a ?type .
+}

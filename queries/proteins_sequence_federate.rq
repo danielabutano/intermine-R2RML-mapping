@@ -1,0 +1,9 @@
+PREFIX up:<http://purl.uniprot.org/core/>
+
+SELECT ?protein ?sequence ?type ?value WHERE {?protein a up:Protein ; 
+  up:sequence ?sequence .
+  ?sequence a ?type .
+  SERVICE <https://sparql.uniprot.org/sparql> {
+    ?sequence rdf:value ?value .
+  }
+}
