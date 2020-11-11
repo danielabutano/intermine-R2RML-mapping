@@ -115,6 +115,7 @@ public class R2RMLMapping
 				if (uriHelper.isURIIdentifier(tableName, columnName))
 				{
 					//Already done
+					mapPrimitiveObjects(model, tableName, basicTableMapping, columnName, ad);
 				}
 				else if (!ad.isReference() && ad.getFairTerm() != null)
 				{
