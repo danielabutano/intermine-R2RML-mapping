@@ -31,7 +31,6 @@ public class R2RMLMapping
 
 	public static void main(String[] args)
 	{
-
 		Model model = Model.getInstanceByName("genomic");
 		Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
 		Set<CollectionDescriptor> indirections = new HashSet<CollectionDescriptor>();
@@ -42,15 +41,11 @@ public class R2RMLMapping
 		for (ClassDescriptor cd : classDescriptors)
 		{
 			String table = cd.getSimpleName();
-			
-                        mapBasicFields(cd, jenaModel, uriHelper);
-
-                        //joining table
-                        mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
+			mapBasicFields(cd, jenaModel, uriHelper);
+			mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
 		}
 		try (PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"))){
 			jenaModel.write(out, "turtle");
-			//jenaModel.write(System.out, "turtle");
 		} catch (IOException ex) {
 			ex.printStackTrace();
                         System.exit(1);
@@ -87,7 +82,6 @@ public class R2RMLMapping
 					mapManyToMany(jenaModel, basicTableMapping, cd, uriHelper, collection);
 				}
 			}
-
 		}
 	}
 
@@ -99,12 +93,12 @@ public class R2RMLMapping
 		
 		final Resource logicalTable = model.createResource();
 		
-                final AttributeDescriptor subjectMap = generateSubjectMap(cd, model, tableName, basicTableMapping, uriHelper);
-                if (subjectMap != null) {
-                        model.add(basicTableMapping, RDF.type, R2RML.TriplesMap);
-                        model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
-                        model.add(logicalTable, R2RML.tableName, tableName);
-                }
+		final AttributeDescriptor subjectMap = generateSubjectMap(cd, model, tableName, basicTableMapping, uriHelper);
+		if (subjectMap != null) {
+				model.add(basicTableMapping, RDF.type, R2RML.TriplesMap);
+				model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
+				model.add(logicalTable, R2RML.tableName, tableName);
+		}
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors())
 		{
 			String columnName = DatabaseUtil.getColumnName(fd);
@@ -119,7 +113,6 @@ public class R2RMLMapping
 			}
 			else if (!fd.isCollection())
 			{
-				//n to one relation
 				mapOneToMany(model, basicTableMapping, fd, columnName, uriHelper);
 			}
 		}
@@ -144,10 +137,10 @@ public class R2RMLMapping
 
 					model.add(subjectMap, R2RML.template, uriHelper.createURI(tableName));
 
-                                        if (cd.getFairTerm() != null && !cd.getFairTerm().isEmpty()){
-                                                Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
-                                                model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
-                                        }
+					if (cd.getFairTerm() != null && !cd.getFairTerm().isEmpty()){
+						Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
+						model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
+					}
 					return ad;
 				}
 			}
@@ -233,7 +226,6 @@ public class R2RMLMapping
 				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
 				//TODO figure out what predicate to use. Maybe for now just use intermine
-				//model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(fromColumnname.getName()));
 				model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(toTableName));
 				model.add(objectPredicateMap, R2RML.objectMap, objectMap);
 				model.add(objectMap, RDF.type, R2RML.TermMap);
@@ -263,16 +255,16 @@ public class R2RMLMapping
 		System.err.println(columnName + ": FOREIGN KEY with type java.lang.Integer referring to "
 		    + jointTable + ".id");
                 if (findSubjectMap(rfc,jointTable, uriHelper) != null) {
-                        Resource objectMap = model.createResource();
-                        Resource objectPredicateMap = model.createResource();
-                        Resource joinCondition = model.createResource();
-                        model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
-                        model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
-                        model.add(objectPredicateMap, R2RML.objectMap, objectMap);
-                        model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
-                        model.add(objectMap, R2RML.joinCondition, joinCondition);
-                        model.add(joinCondition, R2RML.child, fd.getName() + "id");
-                        model.add(joinCondition, R2RML.parent, "id");
+					Resource objectMap = model.createResource();
+					Resource objectPredicateMap = model.createResource();
+					Resource joinCondition = model.createResource();
+					model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
+					model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
+					model.add(objectPredicateMap, R2RML.objectMap, objectMap);
+					model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
+					model.add(objectMap, R2RML.joinCondition, joinCondition);
+					model.add(joinCondition, R2RML.child, fd.getName() + "id");
+					model.add(joinCondition, R2RML.parent, "id");
                 }
 	}
 
@@ -334,11 +326,11 @@ public class R2RMLMapping
 			case "java.lang.Double":
 				return XSD.decimal;        
 			default:
-                        {
-                            System.err.println("Unknown primitive datatype: "+ad.getType());
-                            System.exit(2);
-                            return null;
-                        }
+				{
+					System.err.println("Unknown primitive datatype: "+ad.getType());
+					System.exit(2);
+					return null;
+				}
 		}
 	}
 }
