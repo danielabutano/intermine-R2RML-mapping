@@ -267,16 +267,17 @@ public class R2RMLMapping
 	    FieldDescriptor fd, String columnName, URIHelper uriHelper)
 	{
 		final ClassDescriptor rfc = ((ReferenceDescriptor) fd).getReferencedClassDescriptor();
+		String jointTable = DatabaseUtil.getTableName(rfc);
 		System.err.println(columnName + ": FOREIGN KEY with type java.lang.Integer referring to "
-		    + rfc.getSimpleName() + ".id");
-                if (findSubjectMap(rfc ,DatabaseUtil.getTableName(rfc),uriHelper) != null) {
+		    + jointTable + ".id");
+                if (findSubjectMap(rfc,jointTable, uriHelper) != null) {
                         Resource objectMap = model.createResource();
                         Resource objectPredicateMap = model.createResource();
                         Resource joinCondition = model.createResource();
                         model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
                         model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
                         model.add(objectPredicateMap, R2RML.objectMap, objectMap);
-                        model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, DatabaseUtil.getTableName(rfc)));
+                        model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
                         model.add(objectMap, R2RML.joinCondition, joinCondition);
                         model.add(joinCondition, R2RML.child, fd.getName() + "id");
                         model.add(joinCondition, R2RML.parent, "id");
