@@ -58,7 +58,7 @@ public class R2RMLMapping
 		try {
 			PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"));
 			jenaModel.write(out, "turtle");
-			jenaModel.write(System.out, "turtle");
+			//jenaModel.write(System.out, "turtle");
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
@@ -273,9 +273,7 @@ public class R2RMLMapping
 		model.add(objectMap, R2RML.joinCondition, joinCondition);
 		model.add(joinCondition, R2RML.child, fd.getName() + "id");
 		model.add(joinCondition, R2RML.parent, "id");
-		//TODO figure out what predicate to use. Maybe for now just use
-		//http://intermine.org/has{columnName}
-		model.add(objectMap, R2RML.predicate, RDFS.seeAlso);
+		model.add(objectMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
 	}
 
 	/**

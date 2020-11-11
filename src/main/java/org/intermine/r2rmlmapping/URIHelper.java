@@ -4,6 +4,7 @@ import org.intermine.web.uri.ClassNameURIIdentifierMapper;
 
 public class URIHelper {
     public final static String interMineNS = "http://intermine.org/biotestmine/";
+    public final static String interMineVocNS = "http://intermine.org/vocabulary/";
     public final static String uniProtNS = "http://purl.uniprot.org/core/";
     public final static String uniProtKbNS = "http://purl.uniprot.org/uniprot/";
 

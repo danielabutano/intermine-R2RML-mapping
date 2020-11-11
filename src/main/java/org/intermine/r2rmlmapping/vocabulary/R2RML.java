@@ -34,6 +34,6 @@ public class R2RML
 	public static final RDFNode IRI = ResourceFactory.createProperty(uri, "IRI");
 
 	public static final Property createIMProperty(String attribute) {
-		return ResourceFactory.createProperty(URIHelper.interMineNS, "has" + attribute);
+		return ResourceFactory.createProperty(URIHelper.interMineVocNS, "has" + attribute);
 	}
 }
