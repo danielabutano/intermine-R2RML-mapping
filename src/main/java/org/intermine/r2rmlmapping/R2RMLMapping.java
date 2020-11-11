@@ -112,22 +112,14 @@ public class R2RMLMapping
 			if (fd instanceof AttributeDescriptor)
 			{
 				AttributeDescriptor ad = (AttributeDescriptor) fd;
-				if (uriHelper.isURIIdentifier(tableName, columnName))
-				{
-					//Already done
-					mapPrimitiveObjects(model, tableName, basicTableMapping, columnName, ad);
-				}
-				else if (!ad.isReference() && ad.getFairTerm() != null)
-				{
-					mapPrimitiveObjects(model, tableName, basicTableMapping, columnName, ad);
-				}
+				mapPrimitiveObjects(model, tableName, basicTableMapping, columnName, ad);
 				System.err.println(columnName +
 				    (columnName.equalsIgnoreCase("id") ? ": PRIMARY KEY" : ": column")
 				    + " with type " + ((AttributeDescriptor) fd).getType());
 			}
 			else if (!fd.isCollection())
-			{ //n to one relation
-                                
+			{
+				//n to one relation
 				mapOneToMany(model, basicTableMapping, fd, columnName, uriHelper);
 			}
 		}
