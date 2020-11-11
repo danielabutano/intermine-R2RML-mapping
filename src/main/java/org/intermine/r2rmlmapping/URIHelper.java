@@ -35,4 +35,12 @@ public class URIHelper {
             return interMineNS + type + "/{" + identifier +"}";
         }
     }
+    
+     public String createURI(String type, String allias) {
+        if (("Protein").equalsIgnoreCase(type)) {
+            return uniProtKbNS + "{" + allias +"}";
+        } else {
+            return interMineNS + type + "/{" + allias +"}";
+        }
+    }
 }

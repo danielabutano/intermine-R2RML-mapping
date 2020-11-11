@@ -232,10 +232,10 @@ public class R2RMLMapping
 				// We need the "AS" fromColumnname because that column name is used in the 
 				// GenerateSubjectsMap method.
 				model.add(table, R2RML.sqlQuery,
-				    "SELECT " + fromTableName + "." + fromColumnname.getName() + " AS fromColumnName"
+				    "SELECT " + fromTableName + "." + fromColumnname.getName()
 				        + ", "
 				        + toTableName
-				        + "." + toColumnName.getName() + " FROM "
+				        + "." + toColumnName.getName() + " AS toColumnName  FROM "
 				        + tables
 				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
@@ -248,7 +248,7 @@ public class R2RMLMapping
 				// We need to disambiguate here as the toColumnName and fromColumnName might be lexically the same.
 				model.add(objectMap, R2RML.column, toColumnName.getName());
 				model.add(objectMap, R2RML.termType, R2RML.IRI);
-				model.add(objectMap, R2RML.template, uriHelper.createURI(toTableName));
+				model.add(objectMap, R2RML.template, uriHelper.createURI(toTableName, "toColumnName"));
 			}
 		}
 	}
