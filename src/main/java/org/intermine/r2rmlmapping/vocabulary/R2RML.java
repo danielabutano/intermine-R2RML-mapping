@@ -1,5 +1,6 @@
 package org.intermine.r2rmlmapping.vocabulary;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
@@ -34,6 +35,6 @@ public class R2RML
 	public static final RDFNode IRI = ResourceFactory.createProperty(uri, "IRI");
 
 	public static final Property createIMProperty(String attribute) {
-		return ResourceFactory.createProperty(URIHelper.interMineVocNS, "has" + attribute);
+		return ResourceFactory.createProperty(URIHelper.interMineVocNS, "has" + StringUtils.capitalize(attribute));
 	}
 }
