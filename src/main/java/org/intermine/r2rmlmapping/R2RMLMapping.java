@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -210,7 +212,7 @@ public class R2RMLMapping
 		Resource table = model.createResource();
 		if (findSubjectMap(fromTableDescription, fromTableName, uriHelper) != null)
 		{
-			Resource jointTriplesMap = createMappingNameForJoinTable(model, fromTableName, toTableName);
+			Resource jointTriplesMap = createMappingNameForJoinTable(model, fromTableName, joinTableName, toTableName);
 			final AttributeDescriptor toColumnName = findSubjectMap(toTableDescription, toTableName, uriHelper);
 			if (toColumnName != null)
 			{
@@ -223,16 +225,18 @@ public class R2RMLMapping
 				model.add(jointTriplesMap, RDF.type, R2RML.TriplesMap);
 				model.add(jointTriplesMap, R2RML.logicalTable, table);
 				model.add(table, RDF.type, R2RML.R2RMLView);
+                                final Stream<String> distinct = Stream.of(fromTableName, joinTableName, toTableName).distinct();
+                                String tables = distinct.collect(Collectors.joining(","));
 				// We build a big sql query to join internally via the intermine id's.
 				// But expose the external identifiers only.
 				// We need the "AS" fromColumnname because that column name is used in the 
 				// GenerateSubjectsMap method.
 				model.add(table, R2RML.sqlQuery,
-				    "SELECT " + fromTableName + "." + fromColumnname.getName() + " AS " + fromColumnname.getName()
+				    "SELECT " + fromTableName + "." + fromColumnname.getName() + " AS fromColumnName"
 				        + ", "
 				        + toTableName
 				        + "." + toColumnName.getName() + " FROM "
-				        + fromTableName + "," + toTableName +"," + joinTableName
+				        + tables
 				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
 				//TODO figure out what predicate to use. Maybe for now just use intermine
@@ -242,7 +246,7 @@ public class R2RMLMapping
 				model.add(objectMap, RDF.type, R2RML.TermMap);
 				model.add(objectMap, RDF.type, R2RML.ObjectMap);
 				// We need to disambiguate here as the toColumnName and fromColumnName might be lexically the same.
-				model.add(objectMap, R2RML.column, toTableName + "." + toColumnName.getName());
+				model.add(objectMap, R2RML.column, toColumnName.getName());
 				model.add(objectMap, R2RML.termType, R2RML.IRI);
 				model.add(objectMap, R2RML.template, uriHelper.createURI(toTableName));
 			}
@@ -309,9 +313,9 @@ public class R2RMLMapping
 	}
 
 	private static Resource createMappingNameForJoinTable(org.apache.jena.rdf.model.Model model, final String tableName,
-	    final String otherTableName)
+	    final String joinTableName, final String otherTableName)
 	{
-		return model.createResource("urn:intermine-join-tables:" + tableName + '/' + otherTableName);
+		return model.createResource("urn:intermine-join-tables:" + tableName + '/'+joinTableName+'/' + otherTableName);
 	}
 
 	/**
