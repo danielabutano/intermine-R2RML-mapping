@@ -40,27 +40,18 @@ public class R2RMLMapping
 		for (ClassDescriptor cd : classDescriptors)
 		{
 			String table = cd.getSimpleName();
-			if (//table.equalsIgnoreCase("Gene") ||
-			table.equalsIgnoreCase("Protein") ||
-			    table.equalsIgnoreCase("Organism")
-			//table.equalsIgnoreCase("DataSource") ||
-			//table.equalsIgnoreCase("DataSet")
-			//
-			)
-			{
+			
+                        mapBasicFields(cd, jenaModel, uriHelper);
 
-				mapBasicFields(cd, jenaModel, uriHelper);
-
-				//joining table
-				mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
-			}
+                        //joining table
+                        mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
 		}
-		try {
-			PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"));
+		try (PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"))){
 			jenaModel.write(out, "turtle");
 			//jenaModel.write(System.out, "turtle");
 		} catch (IOException ex) {
 			ex.printStackTrace();
+                        System.exit(1);
 		}
 	}
 
@@ -267,13 +258,15 @@ public class R2RMLMapping
 		System.err.println(columnName + ": FOREIGN KEY with type java.lang.Integer referring to "
 		    + rfc.getSimpleName() + ".id");
 		Resource objectMap = model.createResource();
+                Resource objectPredicateMap = model.createResource();
 		Resource joinCondition = model.createResource();
-		model.add(basicTableMapping, R2RML.objectMap, objectMap);
+		model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
+                model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
+                model.add(objectPredicateMap, R2RML.objectMap, objectMap);
 		model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, DatabaseUtil.getTableName(rfc)));
 		model.add(objectMap, R2RML.joinCondition, joinCondition);
 		model.add(joinCondition, R2RML.child, fd.getName() + "id");
 		model.add(joinCondition, R2RML.parent, "id");
-		model.add(objectMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
 	}
 
 	/**
@@ -322,16 +315,23 @@ public class R2RMLMapping
 	{
 		switch (ad.getType())
 		{
+                        case "org.intermine.objectstore.query.ClobAccess":
 			case "java.lang.String":
 				return XSD.xstring;
 			case "java.lang.Boolean":
 				return XSD.xboolean;
+                        case "int":
 			case "java.lang.Integer":
 				return XSD.integer;
+                        case "double":
 			case "java.lang.Double":
-				return XSD.decimal;
+				return XSD.decimal;        
 			default:
-				return null;
+                        {
+                            System.err.println("Unknown primitive datatype: "+ad.getType());
+                            System.exit(2);
+                            return null;
+                        }
 		}
 	}
 }
