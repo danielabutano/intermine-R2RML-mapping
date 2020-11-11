@@ -94,11 +94,15 @@ public class R2RMLMapping
 		final String tableName = DatabaseUtil.getTableName(cd);
 		System.err.println("TABLE: " + tableName);
 		final Resource basicTableMapping = createMappingNameForTable(model, tableName);
-		model.add(basicTableMapping, RDF.type, R2RML.TriplesMap);
+		
 		final Resource logicalTable = model.createResource();
-		model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
-		model.add(logicalTable, R2RML.tableName, tableName);
-		generateSubjectMap(cd, model, tableName, basicTableMapping, uriHelper);
+		
+                final AttributeDescriptor subjectMap = generateSubjectMap(cd, model, tableName, basicTableMapping, uriHelper);
+                if (subjectMap != null) {
+                        model.add(basicTableMapping, RDF.type, R2RML.TriplesMap);
+                        model.add(basicTableMapping, R2RML.logicalTable, logicalTable);
+                        model.add(logicalTable, R2RML.tableName, tableName);
+                }
 		for (FieldDescriptor fd : cd.getAllFieldDescriptors())
 		{
 			String columnName = DatabaseUtil.getColumnName(fd);
@@ -120,8 +124,8 @@ public class R2RMLMapping
 			}
 			else if (!fd.isCollection())
 			{ //n to one relation
-
-				mapOneToMany(model, basicTableMapping, fd, columnName);
+                                
+				mapOneToMany(model, basicTableMapping, fd, columnName, uriHelper);
 			}
 		}
 		System.err.println();
@@ -139,13 +143,16 @@ public class R2RMLMapping
 				AttributeDescriptor ad = (AttributeDescriptor) fd;
 				if (uriHelper.isURIIdentifier(tableName, columnName))
 				{
-					Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
+					
 					Resource subjectMap = model.createResource();
 					model.add(basicTableMapping, R2RML.subjectMap, subjectMap);
 
 					model.add(subjectMap, R2RML.template, uriHelper.createURI(tableName));
 
-					model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
+                                        if (cd.getFairTerm() != null && !cd.getFairTerm().isEmpty()){
+                                                Resource classInOutsideWorld = ResourceFactory.createProperty(cd.getFairTerm());
+                                                model.add(subjectMap, R2RML.classProperty, classInOutsideWorld);
+                                        }
 					return ad;
 				}
 			}
@@ -252,21 +259,23 @@ public class R2RMLMapping
 	 * @param columnName
 	 */
 	private static void mapOneToMany(org.apache.jena.rdf.model.Model model, final Resource basicTableMapping,
-	    FieldDescriptor fd, String columnName)
+	    FieldDescriptor fd, String columnName, URIHelper uriHelper)
 	{
 		final ClassDescriptor rfc = ((ReferenceDescriptor) fd).getReferencedClassDescriptor();
 		System.err.println(columnName + ": FOREIGN KEY with type java.lang.Integer referring to "
 		    + rfc.getSimpleName() + ".id");
-		Resource objectMap = model.createResource();
-                Resource objectPredicateMap = model.createResource();
-		Resource joinCondition = model.createResource();
-		model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
-                model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
-                model.add(objectPredicateMap, R2RML.objectMap, objectMap);
-		model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, DatabaseUtil.getTableName(rfc)));
-		model.add(objectMap, R2RML.joinCondition, joinCondition);
-		model.add(joinCondition, R2RML.child, fd.getName() + "id");
-		model.add(joinCondition, R2RML.parent, "id");
+                if (findSubjectMap(rfc ,DatabaseUtil.getTableName(rfc),uriHelper) != null) {
+                        Resource objectMap = model.createResource();
+                        Resource objectPredicateMap = model.createResource();
+                        Resource joinCondition = model.createResource();
+                        model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
+                        model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
+                        model.add(objectPredicateMap, R2RML.objectMap, objectMap);
+                        model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, DatabaseUtil.getTableName(rfc)));
+                        model.add(objectMap, R2RML.joinCondition, joinCondition);
+                        model.add(joinCondition, R2RML.child, fd.getName() + "id");
+                        model.add(joinCondition, R2RML.parent, "id");
+                }
 	}
 
 	/**
