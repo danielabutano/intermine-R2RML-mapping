@@ -300,7 +300,7 @@ public class R2RMLMapping
 
 		model.add(objectMap, R2RML.datatype, getXsdForFullyQualifiedClassName(ad));
 		model.add(objectMap, R2RML.column, columnName);
-		model.add(predicateObjectMap, R2RML.predicate, model.createProperty(ad.getFairTerm()));
+		model.add(predicateObjectMap, R2RML.predicate, R2RML.createIMProperty(columnName));
 	}
 
 	private static Resource createMappingNameForTable(org.apache.jena.rdf.model.Model model, final String tableName)
