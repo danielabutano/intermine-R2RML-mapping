@@ -33,7 +33,6 @@ public class R2RMLMapping
 	{
 		Model model = Model.getInstanceByName("genomic");
 		Set<ClassDescriptor> classDescriptors = model.getClassDescriptors();
-		Set<CollectionDescriptor> indirections = new HashSet<CollectionDescriptor>();
 		final org.apache.jena.rdf.model.Model jenaModel = ModelFactory.createDefaultModel();
 		setKnownPrefixes(jenaModel);
 		URIHelper uriHelper = new URIHelper();
@@ -42,7 +41,7 @@ public class R2RMLMapping
 		{
 			String table = cd.getSimpleName();
 			mapBasicFields(cd, jenaModel, uriHelper);
-			mapJoinToOtherTable(indirections, cd, table, jenaModel, uriHelper);
+			mapJoinToOtherTable(cd, table, jenaModel, uriHelper);
 		}
 		try (PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"))){
 			jenaModel.write(out, "turtle");
@@ -59,28 +58,24 @@ public class R2RMLMapping
 		jenaModel.setNsPrefix("up", URIHelper.uniProtNS);
 	}
 
-	private static void mapJoinToOtherTable(Set<CollectionDescriptor> indirections, ClassDescriptor cd, String table,
+	private static void mapJoinToOtherTable(ClassDescriptor cd, String table,
 	    org.apache.jena.rdf.model.Model jenaModel, URIHelper uriHelper)
 	{
 		for (CollectionDescriptor collection : cd.getCollectionDescriptors())
 		{
 			if (FieldDescriptor.M_N_RELATION == collection.relationType())
 			{
-				if (!indirections.contains(collection.getReverseReferenceDescriptor()))
-				{
-					indirections.add(collection);
-					String indirectionTable = DatabaseUtil.getIndirectionTableName(collection);
-					System.err.println("JOINING TABLE: " + indirectionTable);
-					String column1 = DatabaseUtil.getInwardIndirectionColumnName(collection, FORMAT_VERSION);
-					String column2 = DatabaseUtil.getOutwardIndirectionColumnName(collection, FORMAT_VERSION);
-					System.err.println(column1 + ": FOREIGN KEY with type java.lang.Integer referring to "
-					    + table + ".id");
-					System.err.println(column2 + ": FOREIGN KEY with type java.lang.Integer referring to "
-					    + collection.getReferencedClassDescriptor().getName() + (".id"));
-					System.err.println();
-					final Resource basicTableMapping = createMappingNameForTable(jenaModel, table);
-					mapManyToMany(jenaModel, basicTableMapping, cd, uriHelper, collection);
-				}
+                String indirectionTable = DatabaseUtil.getIndirectionTableName(collection);
+                System.err.println("JOINING TABLE: " + indirectionTable);
+                String column1 = DatabaseUtil.getInwardIndirectionColumnName(collection, FORMAT_VERSION);
+                String column2 = DatabaseUtil.getOutwardIndirectionColumnName(collection, FORMAT_VERSION);
+                System.err.println(column1 + ": FOREIGN KEY with type java.lang.Integer referring to "
+                    + table + ".id");
+                System.err.println(column2 + ": FOREIGN KEY with type java.lang.Integer referring to "
+                    + collection.getReferencedClassDescriptor().getName() + (".id"));
+                System.err.println();
+                final Resource basicTableMapping = createMappingNameForTable(jenaModel, table);
+                mapManyToMany(jenaModel, basicTableMapping, cd, uriHelper, collection);
 			}
 		}
 	}
