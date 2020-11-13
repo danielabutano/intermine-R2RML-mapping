@@ -1,0 +1,14 @@
+PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX im: <http://intermine.org/vocabulary/>
+
+SELECT ?protein ?primaryAccession ?uniprotName ?organismName ?gene ?genePrimaryIdentifier ?geneSecondaryIdentifier WHERE {
+?protein a up:Protein .
+?protein im:hasPrimaryAccession ?primaryAccession .
+?protein im:hasUniprotName ?uniprotName .
+?protein im:hasOrganism <http://intermine.org/biotestmine/Organism/36329> .
+?protein im:hasOrganism ?organism .
+?organism im:hasName ?organismName .
+?protein im:hasGene ?gene .
+?gene im:hasPrimaryIdentifier ?genePrimaryIdentifier .
+?gene im:hasSecondaryIdentifier ?geneSecondaryIdentifier .    
+}
