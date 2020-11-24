@@ -7,10 +7,10 @@ Clone the project from github and execute:
 ```
 cd intermine-R2RML-mapping
 ./gradlew install
-./gradlew -q run > mapping.ttl # Silence gradle or it will corrupt the mapping file
+./gradlew run
 ```
 
-This mapping.ttl file can then be used by R2RML implementations such as [ontop](https://ontop-vkg.org/guide/cli.html).
+The mapping.ttl file generated, can then be used by R2RML implementations such as [ontop](https://ontop-vkg.org/guide/cli.html).
 
 If one wants to use ontop
 ```
@@ -32,6 +32,9 @@ jdbc.password=${YOUR_PGSQL_PASSWORD}
 
 #Then one can use 
 ./ontop query -m ../mapping.ttl -p db.properties -q ../queries/proteins.rq
+
+#OR run a SPARQL endpoint
+./ontop endpoint -m ../mapping.ttl -p db.properties --port 8081
 ```
 
 
