@@ -10,7 +10,7 @@ cd intermine-R2RML-mapping
 ./gradlew run
 ```
 
-The mapping.ttl file generated, can then be used by R2RML implementations such as [ontop](https://ontop-vkg.org/guide/cli.html).
+The mapping.ttl file is generated from the genomic_model.xml, and can then be used by R2RML implementations such as [ontop](https://ontop-vkg.org/guide/cli.html).
 
 If one wants to use ontop
 ```
