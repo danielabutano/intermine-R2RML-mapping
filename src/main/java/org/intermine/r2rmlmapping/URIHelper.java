@@ -1,9 +1,11 @@
 package org.intermine.r2rmlmapping;
 
+import org.apache.commons.lang.StringUtils;
 import org.intermine.web.uri.ClassNameURIIdentifierMapper;
 
 public class URIHelper {
-    public final static String interMineNS = "http://intermine.org/biotestmine/";
+    //public final static String interMineNS = "http://intermine.org/biotestmine/";
+    public final static String interMineNS = "http://localhost:8080/biotestmine/";
     public final static String interMineVocNS = "http://intermine.org/vocabulary/";
     public final static String uniProtNS = "http://purl.uniprot.org/core/";
     public final static String uniProtKbNS = "http://purl.uniprot.org/uniprot/";
@@ -32,7 +34,7 @@ public class URIHelper {
         if (("Protein").equalsIgnoreCase(type)) {
             return uniProtKbNS + "{" + identifier +"}";
         } else {
-            return interMineNS + type + "/{" + identifier +"}";
+            return interMineNS + StringUtils.lowerCase(type) + ":{" + identifier +"}";
         }
     }
     
@@ -40,7 +42,7 @@ public class URIHelper {
         if (("Protein").equalsIgnoreCase(type)) {
             return uniProtKbNS + "{" + allias +"}";
         } else {
-            return interMineNS + type + "/{" + allias +"}";
+            return interMineNS + StringUtils.lowerCase(type) + ":{" + allias +"}";
         }
     }
 }
