@@ -1,0 +1,38 @@
+title="BioTestMine SPARQL endpoint"
+
+[[tabGroups]]
+
+name="Templates"
+
+[[tabGroups.tabs]]
+name="Gene -> Proteins"
+query="""
+PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX im: <http://intermine.org/vocabulary/>
+
+SELECT ?protein ?primaryAccession ?uniprotName ?gene ?genePrimaryIdentifier ?symbol WHERE {
+?protein a up:Protein .
+?protein im:hasPrimaryAccession ?primaryAccession .
+?protein im:hasUniprotName ?uniprotName .
+?protein im:hasGene ?gene .
+?gene im:hasPrimaryIdentifier ?genePrimaryIdentifier .
+?gene im:hasSymbol ?symbol .
+FILTER(?symbol="ABRA"^^xsd:string)
+}
+"""
+
+[[tabGroups.tabs]]
+name="Organism -> All proteins"
+query="""
+PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX im: <http://intermine.org/vocabulary/>
+
+SELECT ?protein ?primaryAccession ?uniprotName WHERE {
+?protein a up:Protein .
+?protein im:hasPrimaryAccession ?primaryAccession .
+?protein im:hasUniprotName ?uniprotName .
+?protein im:hasOrganism ?organism .
+?organism im:hasName ?organismName .
+FILTER(?organismName="Plasmodium falciparum 3D7"^^xsd:string)
+}
+"""
