@@ -27,10 +27,13 @@ query="""
 PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX im: <http://intermine.org/vocabulary/>
 
-SELECT ?protein ?primaryAccession ?uniprotName WHERE {
+SELECT ?protein ?primaryAccession ?uniprotName ?name ?length ?md5checksum ?organismName WHERE {
 ?protein a up:Protein .
 ?protein im:hasPrimaryAccession ?primaryAccession .
 ?protein im:hasUniprotName ?uniprotName .
+?protein im:hasName ?name .
+?protein im:hasLength ?length .
+?protein im:hasMd5checksum ?md5checksum .
 ?protein im:hasOrganism ?organism .
 ?organism im:hasName ?organismName .
 FILTER(?organismName="Plasmodium falciparum 3D7"^^xsd:string)
