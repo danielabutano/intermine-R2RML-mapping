@@ -3,7 +3,6 @@ package org.intermine.r2rmlmapping;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,9 +38,10 @@ public class R2RMLMapping
 
 		for (ClassDescriptor cd : classDescriptors)
 		{
-			String table = cd.getSimpleName();
-			mapBasicFields(cd, jenaModel, uriHelper);
-			mapJoinToOtherTable(cd, table, jenaModel, uriHelper);
+			if (isExportable(cd)) {
+				mapBasicFields(cd, jenaModel, uriHelper);
+				mapJoinToOtherTable(cd, jenaModel, uriHelper);
+			}
 		}
 		try (PrintWriter out = new PrintWriter(new FileWriter("mapping.ttl"))){
 			jenaModel.write(out, "turtle");
@@ -51,6 +51,15 @@ public class R2RMLMapping
 		}
 	}
 
+	private static boolean isExportable(ClassDescriptor classDescriptor) {
+		String dataType = classDescriptor.getSimpleName();
+		if ("Annotatable".equalsIgnoreCase(dataType) || "BioEntity".equalsIgnoreCase(dataType)
+				|| "SequenceFeature".equalsIgnoreCase(dataType)) {
+			return false;
+		}
+		return true;
+	}
+
 	private static void setKnownPrefixes(final org.apache.jena.rdf.model.Model jenaModel)
 	{
 		jenaModel.setNsPrefix("rr", R2RML.uri);
@@ -58,24 +67,16 @@ public class R2RMLMapping
 		jenaModel.setNsPrefix("up", URIHelper.uniProtNS);
 	}
 
-	private static void mapJoinToOtherTable(ClassDescriptor cd, String table,
-	    org.apache.jena.rdf.model.Model jenaModel, URIHelper uriHelper)
+	private static void mapJoinToOtherTable(ClassDescriptor cd,
+	    org.apache.jena.rdf.model.Model model, URIHelper uriHelper)
 	{
-		for (CollectionDescriptor collection : cd.getCollectionDescriptors())
+		for (CollectionDescriptor collection : cd.getAllCollectionDescriptors())
 		{
 			if (FieldDescriptor.M_N_RELATION == collection.relationType())
 			{
                 String indirectionTable = DatabaseUtil.getIndirectionTableName(collection);
                 System.err.println("JOINING TABLE: " + indirectionTable);
-                String column1 = DatabaseUtil.getInwardIndirectionColumnName(collection, FORMAT_VERSION);
-                String column2 = DatabaseUtil.getOutwardIndirectionColumnName(collection, FORMAT_VERSION);
-                System.err.println(column1 + ": FOREIGN KEY with type java.lang.Integer referring to "
-                    + table + ".id");
-                System.err.println(column2 + ": FOREIGN KEY with type java.lang.Integer referring to "
-                    + collection.getReferencedClassDescriptor().getName() + (".id"));
-                System.err.println();
-                final Resource basicTableMapping = createMappingNameForTable(jenaModel, table);
-                mapManyToMany(jenaModel, basicTableMapping, cd, uriHelper, collection);
+                mapManyToMany(model, cd, uriHelper, collection);
 			}
 		}
 	}
@@ -100,18 +101,43 @@ public class R2RMLMapping
 
 			if (fd instanceof AttributeDescriptor)
 			{
-				AttributeDescriptor ad = (AttributeDescriptor) fd;
-				mapPrimitiveObjects(model, tableName, basicTableMapping, columnName, ad);
+				mapPrimitiveObjects(model, tableName, basicTableMapping, (AttributeDescriptor) fd);
 				System.err.println(columnName +
 				    (columnName.equalsIgnoreCase("id") ? ": PRIMARY KEY" : ": column")
 				    + " with type " + ((AttributeDescriptor) fd).getType());
-			}
-			else if (!fd.isCollection())
-			{
-				mapOneToMany(model, basicTableMapping, fd, columnName, uriHelper);
+			} else if (fd.isCollection() && ((CollectionDescriptor) fd).relationType() == FieldDescriptor.ONE_N_RELATION) {
+				//Gene->Synonyms
+				if (isExportable(cd)) {
+					createOneToManyResources(model, cd, (CollectionDescriptor) fd, basicTableMapping, uriHelper);
+				}
+			} else if (!fd.isCollection()) {
+				mapManyToOne(model, basicTableMapping, fd, uriHelper);
 			}
 		}
 		System.err.println();
+	}
+
+	public static void createOneToManyResources(org.apache.jena.rdf.model.Model model,
+			ClassDescriptor cd, CollectionDescriptor collection, Resource basicTableMapping, URIHelper uriHelper) {
+		System.err.println("ONE_N_RELATION");
+		System.err.println(cd.getSimpleName());//Gene
+		ReferenceDescriptor reverse = collection.getReverseReferenceDescriptor();
+
+		String jointTable = collection.getReferencedClassDescriptor().getSimpleName();
+		if (findSubjectMap(collection.getReferencedClassDescriptor(),collection.getReferencedClassDescriptor().getSimpleName(), uriHelper) != null
+				&& isExportable(collection.getReferencedClassDescriptor())) {//e.g strain -> Sequencefeature
+			Resource objectMap = model.createResource();
+			Resource objectPredicateMap = model.createResource();
+			Resource joinCondition = model.createResource();
+			model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
+			model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(collection.getReferencedClassDescriptor().getSimpleName()));
+			model.add(objectPredicateMap, R2RML.objectMap, objectMap);
+			model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
+			model.add(objectMap, R2RML.joinCondition, joinCondition);
+			model.add(joinCondition, R2RML.child, "id");
+			model.add(joinCondition, R2RML.parent, reverse.getName() + "id");
+		}
+
 	}
 
 	private static AttributeDescriptor generateSubjectMap(ClassDescriptor cd, org.apache.jena.rdf.model.Model model,
@@ -174,20 +200,38 @@ public class R2RMLMapping
 	 * 
 	 * 
 	 * @param model
-	 * @param basicTableMapping
 	 * @param fromTableDescription 
 	 * @param uriHelper
 	 * @param collection 
 	 */
-	private static void mapManyToMany(org.apache.jena.rdf.model.Model model, Resource basicTableMapping,
-	    ClassDescriptor fromTableDescription, URIHelper uriHelper, CollectionDescriptor collection)
-	{
-		 
-		final ClassDescriptor toTableDescription = collection.getReferencedClassDescriptor(); 
+	private static void mapManyToMany(org.apache.jena.rdf.model.Model model,
+	    ClassDescriptor fromTableDescription, URIHelper uriHelper, CollectionDescriptor collection) {
+
+		final ClassDescriptor toTableDescription = collection.getReferencedClassDescriptor();
+
+		Model imModel = Model.getInstanceByName("genomic");
+		Set<ClassDescriptor> toSubDescriptors = imModel.getAllSubs(toTableDescription);
+		if (!toSubDescriptors.isEmpty()) {
+			for (ClassDescriptor toSubDescriptor : toSubDescriptors) {
+				if (isExportable(toSubDescriptor)) {
+					createManytoManyResources(model, fromTableDescription, toSubDescriptor, uriHelper, collection);
+				}
+			}
+		} else {
+			if (isExportable(toTableDescription)) {
+				createManytoManyResources(model, fromTableDescription, toTableDescription, uriHelper, collection);
+			}
+		}
+	}
+
+	public static void createManytoManyResources(org.apache.jena.rdf.model.Model model,
+										  ClassDescriptor fromTableDescription,
+										  ClassDescriptor toTableDescription,
+										  URIHelper uriHelper,
+										  CollectionDescriptor collection) {
 		final String fromTableName = DatabaseUtil.getTableName(fromTableDescription);
 		final String joinTableName = DatabaseUtil.getIndirectionTableName(collection);
 		final String toTableName = DatabaseUtil.getTableName(toTableDescription);
-//		
 		String fromJoinColumn = DatabaseUtil.getInwardIndirectionColumnName(collection, FORMAT_VERSION);
 		String toJoinColumn = DatabaseUtil.getOutwardIndirectionColumnName(collection, FORMAT_VERSION);
 		Resource table = model.createResource();
@@ -195,30 +239,29 @@ public class R2RMLMapping
 		{
 			Resource jointTriplesMap = createMappingNameForJoinTable(model, fromTableName, joinTableName, toTableName);
 			final AttributeDescriptor toColumnName = findSubjectMap(toTableDescription, toTableName, uriHelper);
-			if (toColumnName != null)
-			{
+			if (toColumnName != null) {
 				final AttributeDescriptor fromColumnname = generateSubjectMap(fromTableDescription, model,
-				    fromTableName,
-				    jointTriplesMap,
-				    uriHelper);
+						fromTableName,
+						jointTriplesMap,
+						uriHelper);
 				Resource objectPredicateMap = model.createResource();
 				Resource objectMap = model.createResource();
 				model.add(jointTriplesMap, RDF.type, R2RML.TriplesMap);
 				model.add(jointTriplesMap, R2RML.logicalTable, table);
 				model.add(table, RDF.type, R2RML.R2RMLView);
-                                final Stream<String> distinct = Stream.of(fromTableName, joinTableName, toTableName).distinct();
-                                String tables = distinct.collect(Collectors.joining(","));
+				final Stream<String> distinct = Stream.of(fromTableName, joinTableName, toTableName).distinct();
+				String tables = distinct.collect(Collectors.joining(","));
 				// We build a big sql query to join internally via the intermine id's.
 				// But expose the external identifiers only.
-				// We need the "AS" fromColumnname because that column name is used in the 
+				// We need the "AS" fromColumnname because that column name is used in the
 				// GenerateSubjectsMap method.
 				model.add(table, R2RML.sqlQuery,
-				    "SELECT " + fromTableName + "." + fromColumnname.getName()
-				        + ", "
-				        + toTableName
-				        + "." + toColumnName.getName() + " AS toColumnName  FROM "
-				        + tables
-				        + " WHERE " + fromTableName + ".id = " + joinTableName + "."+fromJoinColumn +" AND " + toTableName + ".id = " + joinTableName + "."+toJoinColumn);
+						"SELECT " + fromTableName + "." + fromColumnname.getName()
+								+ ", "
+								+ toTableName
+								+ "." + toColumnName.getName() + " AS toColumnName  FROM "
+								+ tables
+								+ " WHERE " + fromTableName + ".id = " + joinTableName + "." + fromJoinColumn + " AND " + toTableName + ".id = " + joinTableName + "." + toJoinColumn);
 				model.add(jointTriplesMap, R2RML.predicateObjectMap, objectPredicateMap);
 				//TODO figure out what predicate to use. Maybe for now just use intermine
 				model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(toTableName));
@@ -231,6 +274,7 @@ public class R2RMLMapping
 				model.add(objectMap, R2RML.template, uriHelper.createURI(toTableName, "toColumnName"));
 			}
 		}
+
 	}
 
 	/**
@@ -240,27 +284,42 @@ public class R2RMLMapping
 	 * @param model
 	 * @param basicTableMapping
 	 * @param fd
-	 * @param columnName
 	 */
-	private static void mapOneToMany(org.apache.jena.rdf.model.Model model, final Resource basicTableMapping,
-	    FieldDescriptor fd, String columnName, URIHelper uriHelper)
-	{
-		final ClassDescriptor rfc = ((ReferenceDescriptor) fd).getReferencedClassDescriptor();
-		String jointTable = DatabaseUtil.getTableName(rfc);
-		System.err.println(columnName + ": FOREIGN KEY with type java.lang.Integer referring to "
-		    + jointTable + ".id");
-                if (findSubjectMap(rfc,jointTable, uriHelper) != null) {
-					Resource objectMap = model.createResource();
-					Resource objectPredicateMap = model.createResource();
-					Resource joinCondition = model.createResource();
-					model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
-					model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(rfc.getSimpleName()));
-					model.add(objectPredicateMap, R2RML.objectMap, objectMap);
-					model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
-					model.add(objectMap, R2RML.joinCondition, joinCondition);
-					model.add(joinCondition, R2RML.child, fd.getName() + "id");
-					model.add(joinCondition, R2RML.parent, "id");
-                }
+	private static void mapManyToOne(org.apache.jena.rdf.model.Model model, final Resource basicTableMapping,
+	    FieldDescriptor fd, URIHelper uriHelper) {
+		final ClassDescriptor refClassDescriptor = ((ReferenceDescriptor) fd).getReferencedClassDescriptor();
+		Model imModel = Model.getInstanceByName("genomic");
+		Set<ClassDescriptor> toSubDescriptors = imModel.getAllSubs(refClassDescriptor);
+		if (!toSubDescriptors.isEmpty()) {
+			for (ClassDescriptor toSubDescriptor : toSubDescriptors) {
+				if (isExportable(toSubDescriptor)) {
+					createManytoOneResources(model, basicTableMapping, fd, toSubDescriptor, uriHelper);
+				}
+			}
+		} else {
+			if (isExportable(refClassDescriptor)) {
+				createManytoOneResources(model, basicTableMapping, fd, refClassDescriptor, uriHelper);
+			}
+		}
+
+	}
+
+	private static void createManytoOneResources(org.apache.jena.rdf.model.Model model,
+			final Resource basicTableMapping, FieldDescriptor fieldDescriptor,
+			ClassDescriptor referencedClassDescriptor, URIHelper uriHelper) {
+		String jointTable = DatabaseUtil.getTableName(referencedClassDescriptor);
+		if (findSubjectMap(referencedClassDescriptor,jointTable, uriHelper) != null) {
+			Resource objectMap = model.createResource();
+			Resource objectPredicateMap = model.createResource();
+			Resource joinCondition = model.createResource();
+			model.add(basicTableMapping, R2RML.predicateObjectMap, objectPredicateMap);
+			model.add(objectPredicateMap, R2RML.predicate, R2RML.createIMProperty(referencedClassDescriptor.getSimpleName()));
+			model.add(objectPredicateMap, R2RML.objectMap, objectMap);
+			model.add(objectMap, R2RML.parentTriplesMap, createMappingNameForTable(model, jointTable));
+			model.add(objectMap, R2RML.joinCondition, joinCondition);
+			model.add(joinCondition, R2RML.child, fieldDescriptor.getName() + "id");
+			model.add(joinCondition, R2RML.parent, "id");
+		}
 	}
 
 	/**
@@ -268,12 +327,12 @@ public class R2RMLMapping
 	 * @param model
 	 * @param tableName
 	 * @param basicTableMapping
-	 * @param columnName
 	 * @param ad
 	 */
 	private static void mapPrimitiveObjects(org.apache.jena.rdf.model.Model model, final String tableName,
-	    final Resource basicTableMapping, String columnName, AttributeDescriptor ad)
+	    final Resource basicTableMapping, AttributeDescriptor ad)
 	{
+		String columnName = DatabaseUtil.getColumnName(ad);
 		System.err.println(tableName + '.' + columnName + " is primitive");
 		Resource predicateObjectMap = model.createResource();
 		Resource objectMap = model.createResource();
